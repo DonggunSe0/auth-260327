@@ -1,5 +1,6 @@
 package com.rest1.domain.member.member.service;
 
+import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,5 +12,11 @@ public class MemberService {
 
     public long count() {
         return memberRepository.count();
+    }
+
+    //username은 식별자
+    public Member join(String username, String password, String nickname) {
+        Member member = new Member(username, password, nickname);
+        return null;
     }
 }
