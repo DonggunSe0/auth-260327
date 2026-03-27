@@ -1,11 +1,9 @@
 package com.rest1.domain.post.post.entity;
 
+import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.post.comment.entity.Comment;
 import com.rest1.global.jpa.entity.BaseEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,6 +18,13 @@ public class Post extends BaseEntity {
     private String title;
     private String content;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    // fetch = FetchType.EAGER는 Post를 조회할 때,
+    // 작성자(Member)도 함께 조회하도록 설정하는 것이다.
+    //Lazy 는 Post를 조회할 때,
+    // 작성자(Member)는 실제로 필요한 시점까지 조회하지 않는 것이다.
+    private Member writer;
+
     @OneToMany(mappedBy = "post", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval=true, fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
 
@@ -33,8 +38,8 @@ public class Post extends BaseEntity {
         this.content = content;
     }
 
-    public Comment addComment(String content) {
-        Comment comment = new Comment(content, this);
+    public Comment addComment(Member writer, String content) {
+        Comment comment = new Comment(writer, content, this);
         this.comments.add(comment);
 
         return comment;
