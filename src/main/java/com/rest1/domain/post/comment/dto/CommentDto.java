@@ -8,14 +8,20 @@ public record CommentDto(
         Long id,
         LocalDateTime createDate,
         LocalDateTime modifyDate,
-        String content
+        String content,
+        Long writerId,
+        String writerName,
+        Long postId
 ) {
     public CommentDto(Comment comment) {
         this(
                 comment.getId(),
                 comment.getCreateDate(),
                 comment.getModifyDate(),
-                comment.getContent()
+                comment.getContent(),
+                comment.getWriter().getId(),
+                comment.getWriter().getName(),
+                comment.getPost().getId()
         );
     }
 }

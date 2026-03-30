@@ -17,7 +17,7 @@ public class PostService {
     private final PostRepository postRepository;
 
     public Post write(Member writer, String title, String content) {
-        Post post = new Post(title, content);
+        Post post = new Post(writer, title, content);
 
         return postRepository.save(post);
     }
