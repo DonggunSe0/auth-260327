@@ -5,6 +5,7 @@ import com.rest1.domain.member.member.service.MemberService;
 import com.rest1.domain.post.post.dto.PostDto;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.domain.post.post.service.PostService;
+import com.rest1.global.exception.ServiceException;
 import com.rest1.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -88,10 +89,11 @@ public class ApiV1PostController {
 //             @RequestParam String username //고객이 유저네임을 보내준다고 가정
             @NotBlank @Size(min=2, max = 30) String username,
             //@RequestParam 생략 가능 - 스프링이 자동으로 매핑해줌 (예: ?username=someUserName)
-            String password
+            @NotBlank @Size(min=2, max = 30) String password
     ) {
         Member actor = memberService.findByUsername(username).get(); //고객이 유저네임을 보내준다고 가정
-        actor.getPassword()
+        if(!actor.getPassword().equals(password)) throw new ServiceException("401-1","비밀번호가 일치하지 않습니다.");
+        //RunTimeException으로 해도 되지만, IllegalArgumentException이 더 적절해보임. (잘못된 인자값이 들어왔을 때 발생하는 예외)
         Post post = postService.write(actor, reqBody.title, reqBody.content);
 
         System.out.println("createItem 메서드 실행");
