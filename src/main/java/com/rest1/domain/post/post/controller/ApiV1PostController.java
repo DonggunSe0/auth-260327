@@ -86,17 +86,12 @@ public class ApiV1PostController {
     @Operation(summary = "글 작성")
     public RsData<PostWriteResBody> createItem(
             @RequestBody @Valid PostWriteReqBody reqBody,
-//             @RequestParam String username //고객이 유저네임을 보내준다고 가정
-            @NotBlank @Size(min=2, max = 30) String username,
-            //@RequestParam 생략 가능 - 스프링이 자동으로 매핑해줌 (예: ?username=someUserName)
-            @NotBlank @Size(min=2, max = 30) String password
+            @NotBlank @Size(min=30,max=40) String apiKey
+
     ) {
-        Member actor = memberService.findByUsername(username).get(); //고객이 유저네임을 보내준다고 가정
-        if(!actor.getPassword().equals(password)) throw new ServiceException("401-1","비밀번호가 일치하지 않습니다.");
-        //RunTimeException으로 해도 되지만, IllegalArgumentException이 더 적절해보임. (잘못된 인자값이 들어왔을 때 발생하는 예외)
+        Member actor = memberService.findByApiKey(apiKey).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
         Post post = postService.write(actor, reqBody.title, reqBody.content);
 
-        System.out.println("createItem 메서드 실행");
 
         return new RsData<>(
                 "201-1",
