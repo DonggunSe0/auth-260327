@@ -1,5 +1,6 @@
 package com.rest1.domain.member.member.controller;
 
+import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ public class ApiV1MemberControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(
-                        post("/api/v1/members")
+                        post("/api/v1/members/join")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -73,7 +74,7 @@ public class ApiV1MemberControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(
-                        post("/api/v1/members")
+                        post("/api/v1/members/join")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -92,6 +93,44 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("409-1"))
                 .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."));
 
+
+    }
+
+    @Test
+    @DisplayName("로그인")
+    void t3() throws Exception {
+        String username = "user1"; //로그인 시에 username,password만 필요
+        String password = "1234";
+
+        //아이디랑 패스워드를 query string으로 받는 거 안좋고 body로 json으로 받는 게 좋음. 그래서 post로 보냄.
+        ResultActions resultActions = mvc
+                .perform(
+                        post("/api/v1/members/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        
+                                        }
+                                        """.formatted(username, password))
+                )
+                .andDo(print());
+
+        Member member = memberRepository.findByUsername(username).get();
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("login"))
+                .andExpect(status().isOk()) // HTTP 201 Created
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(username)))
+                .andExpect(jsonPath("$.data.apiKey").exists()) // 로그인 성공 시 API 키가 응답에 포함되어야 합니다.(필수)
+                .andExpect(jsonPath("$.data.memberDto.id").value(member.getId())) // 로그인한 회원의 정보 제공
+                //단, username과 password는 제공하면 안된다.
+                .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))
+                .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
+                .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
 
     }
 }
