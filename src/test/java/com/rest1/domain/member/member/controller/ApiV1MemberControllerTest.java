@@ -63,4 +63,35 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.memberDto.modifyDate").exists())
                 .andExpect(jsonPath("$.data.memberDto.name").value(nickname));
     }
+
+    @Test
+    @DisplayName("회원 가입, 이미 존재하는 username으로 가입 - user1")
+    void t2() throws Exception {
+        String username = "user1"; // 이미 존재하는 username
+        String password = "1234";
+        String nickname = "새유저";
+
+        ResultActions resultActions = mvc
+                .perform(
+                        post("/api/v1/members")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s",
+                                            "nickname": "%s"
+                                        }
+                                        """.formatted(username, password, nickname))
+                )
+                .andDo(print());
+        //이미 존재 하는 것과 충돌은 409 Conflict
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("join"))
+                .andExpect(status().isConflict()) // HTTP 201 Created
+                .andExpect(jsonPath("$.resultCode").value("409-1"))
+                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."));
+
+
+    }
 }

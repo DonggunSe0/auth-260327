@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     public RsData<Void> handleException(ServiceException e) {
         return new RsData<Void>(
                 e.getResultCode(),
-                e.getMessage()
+                e.getMsg()
         );
     }
 
