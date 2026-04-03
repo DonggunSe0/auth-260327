@@ -6,6 +6,7 @@ import com.rest1.domain.post.post.dto.PostDto;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.domain.post.post.service.PostService;
 import com.rest1.global.exception.ServiceException;
+import com.rest1.global.rq.Rq;
 import com.rest1.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +27,7 @@ public class ApiV1PostController {
 
     private final PostService postService;
     private final MemberService memberService;
+    private final Rq rq;
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -44,6 +46,9 @@ public class ApiV1PostController {
             @PathVariable Long id
     ) {
 
+        System.out.println("meberService = " + memberService);
+        System.out.println("rq = " + rq);
+
         Post post = postService.findById(id).get();
         return new PostDto(post);
 
@@ -53,13 +58,10 @@ public class ApiV1PostController {
     @DeleteMapping("/{id}")
     @Operation(summary = "글 삭제")
     public RsData<Void> deleteItem(
-            @PathVariable Long id,
-            @RequestHeader("Authorization") @NotBlank @Size(min=30,max=50) String apiKey
+            @PathVariable Long id
+
     ) {
-
-        String authorization = apiKey.replace("Bearer ", ""); // "Bearer " 접두어 제거
-
-        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
+        Member actor = rq.getActor(); //한 줄로 현재 로그인한 회원을 가져옴. rq가 알아서 처리해줌.
         Post post = postService.findById(id).get();
 
         //게시물 수정 권한 체크
@@ -94,14 +96,11 @@ public class ApiV1PostController {
     @Transactional
     @Operation(summary = "글 작성")
     public RsData<PostWriteResBody> createItem(
-            @RequestBody @Valid PostWriteReqBody reqBody,
-            @RequestHeader("Authorization") @NotBlank @Size(min=30,max=50) String apiKey
+            @RequestBody @Valid PostWriteReqBody reqBody
             //bearer 방식이므로 max 50으로 잡음. 실제로는 40자 정도지만 여유있게 잡음.
 
     ) {
-        String authorization = apiKey.replace("Bearer ", ""); // "Bearer " 접두어 제거
-
-        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
+        Member actor = rq.getActor(); //한 줄로 현재 로그인한 회원을 가져옴. rq가 알아서 처리해줌.
         Post post = postService.write(actor, reqBody.title, reqBody.content);
 
 
@@ -131,11 +130,9 @@ public class ApiV1PostController {
     @Operation(summary = "글 수정")
     public RsData<Void> modifyItem(
             @PathVariable Long id,
-            @RequestBody @Valid PostModifyReqBody reqBody,
-            @RequestHeader("Authorization") @NotBlank @Size(min=30,max=50) String apiKey
+            @RequestBody @Valid PostModifyReqBody reqBody
     ) {
-        String authorization = apiKey.replace("Bearer ", ""); // "Bearer " 접두어 제거
-        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
+        Member actor = rq.getActor(); //한 줄로 현재 로그인한 회원을 가져옴. rq가 알아서 처리해줌.
         Post post = postService.findById(id).get();
         //게시물 수정 권한 체크
         if(!actor.equals(post.getWriter())) throw new ServiceException("403-1", "수정 권한이 없습니다.");
