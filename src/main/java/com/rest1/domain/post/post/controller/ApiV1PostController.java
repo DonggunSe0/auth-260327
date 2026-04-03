@@ -86,10 +86,13 @@ public class ApiV1PostController {
     @Operation(summary = "글 작성")
     public RsData<PostWriteResBody> createItem(
             @RequestBody @Valid PostWriteReqBody reqBody,
-            @NotBlank @Size(min=30,max=40) String apiKey
+            @RequestHeader("Authorization") @NotBlank @Size(min=30,max=50) String apiKey
+            //bearer 방식이므로 max 50으로 잡음. 실제로는 40자 정도지만 여유있게 잡음.
 
     ) {
-        Member actor = memberService.findByApiKey(apiKey).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
+        String authorization = apiKey.replace("Bearer ", ""); // "Bearer " 접두어 제거
+
+        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
         Post post = postService.write(actor, reqBody.title, reqBody.content);
 
 
@@ -119,12 +122,16 @@ public class ApiV1PostController {
     @Operation(summary = "글 수정")
     public RsData<Void> modifyItem(
             @PathVariable Long id,
-            @RequestBody @Valid PostModifyReqBody reqBody
+            @RequestBody @Valid PostModifyReqBody reqBody,
+            @RequestHeader("Authorization") @NotBlank @Size(min=30,max=50) String apiKey
     ) {
-
+        String authorization = apiKey.replace("Bearer ", ""); // "Bearer " 접두어 제거
+        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API키가 올바르지 않습니다." ));
         Post post = postService.findById(id).get();
+        //게시물 수정 권한 체크
+        if(!actor.equals(post.getWriter())) throw new ServiceException("403-1", "수정 권한이 없습니다.");
+        //수정 로직
         postService.modify(post, reqBody.title, reqBody.content);
-
         return new RsData(
                 "200-1",
                 "%d번 게시물이 수정되었습니다.".formatted(id)
