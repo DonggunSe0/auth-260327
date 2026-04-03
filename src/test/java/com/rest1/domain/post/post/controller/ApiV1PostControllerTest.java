@@ -185,10 +185,13 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 삭제")
     void t5() throws Exception {
         long targetId = 1;
+        Member writer = memberRepository.findByUsername("user1").get(); // 권한 검증을 위해 로그인한 회원이 존재해야 함.
 
         ResultActions resultActions = mvc
                 .perform(
                         delete("/api/v1/posts/%d".formatted(targetId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
+
                 )
                 .andDo(print());
 
