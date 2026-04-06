@@ -6,6 +6,7 @@ import com.rest1.domain.post.comment.dto.CommentDto;
 import com.rest1.domain.post.comment.entity.Comment;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.domain.post.post.service.PostService;
+import com.rest1.global.rq.Rq;
 import com.rest1.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +27,7 @@ public class ApiV1CommentController {
 
     private final PostService postService;
     private final MemberService memberService;
+    private final Rq rq;
 
     @GetMapping(value = "/{postId}/comments")
     @Operation(summary = "다건 조회")
@@ -57,8 +59,10 @@ public class ApiV1CommentController {
             @PathVariable Long postId,
             @PathVariable Long commentId
     ) {
-
+        Member actor = rq.getActor(); //  권한 부여를 위한 현재 로그인한 회원 정보 가져오기
         Post post = postService.findById(postId).get();
+        Comment comment = post.findCommentById(commentId).get();
+        comment.checkActorDelete(actor);
         postService.deleteComment(post, commentId);
 
         return new RsData<>(
@@ -84,11 +88,11 @@ public class ApiV1CommentController {
     @Operation(summary = "댓글 작성")
     public RsData<CommentWriteResBody> createItem(
             @PathVariable Long postId,
-            @RequestBody @Valid CommentWriteReqBody reqBody,
-            @NotBlank @Size(min = 2, max = 20) String username
+            @RequestBody @Valid CommentWriteReqBody reqBody
+            //필요없는 이유 : rq.getActor()로 현재 로그인한 회원 정보를 가져올 수 있기 때문에, username을 별도로 받을 필요가 없다.
     ) {
 
-        Member actor = memberService.findByUsername(username).get();
+        Member actor = rq.getActor();
         Post post = postService.findById(postId).get();
         Comment comment = postService.writeComment(actor,post, reqBody.content);
 
@@ -119,8 +123,10 @@ public class ApiV1CommentController {
             @PathVariable Long commentId,
             @RequestBody @Valid CommentWriteReqBody reqBody
     ) {
-
+        Member actor = rq.getActor(); // 수정 권한 부여를 위한 현재 로그인한 회원 정보 가져오기
         Post post = postService.findById(postId).get();
+        Comment comment = post.findCommentById(commentId).get();
+        comment.checkActorModify(actor);
         postService.modifyComment(post, commentId, reqBody.content);
 
         return new RsData<>(

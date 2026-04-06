@@ -104,6 +104,7 @@ public class ApiV1CommentControllerTest {
         ResultActions resultActions = mvc
                 .perform(
                         post("/api/v1/posts/%d/comments".formatted(targetPostId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -133,10 +134,12 @@ public class ApiV1CommentControllerTest {
         long targetPostId = 1;
         long targetCommentId = 1;
         String content = "댓글 내용 수정";
+        Member writer = memberRepository.findByUsername("user1").get();
 
         ResultActions resultActions = mvc
                 .perform(
                         put("/api/v1/posts/%d/comments/%d".formatted(targetPostId, targetCommentId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -165,9 +168,13 @@ public class ApiV1CommentControllerTest {
         long targetPostId = 1;
         long targetCommentId = 1;
 
+        Member writer = memberRepository.findByUsername("user1").get();
+
         ResultActions resultActions = mvc
                 .perform(
                         delete("/api/v1/posts/%d/comments/%d".formatted(targetPostId, targetCommentId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
+
                 )
                 .andDo(print());
 
@@ -184,4 +191,62 @@ public class ApiV1CommentControllerTest {
         Comment comment = post.findCommentById(targetCommentId).orElse(null);
         assertThat(comment).isNull();
     }
+
+    @Test
+    @DisplayName("댓글 수정 - 다른 작성자의 댓글 수정")
+    void t6() throws Exception {
+        long targetPostId = 1;
+        long targetCommentId = 1;
+        String content = "댓글 내용 수정";
+
+        Member writer = memberRepository.findByUsername("user2").get();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        put("/api/v1/posts/%d/comments/%d".formatted(targetPostId, targetCommentId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "content": "%s"
+                                        }
+                                        """.formatted(content))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1CommentController.class))
+                .andExpect(handler().methodName("modifyItem"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("댓글 수정 권한이 없습니다."));
+
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 - 다른 작성자의 댓글 삭제")
+    void t7() throws Exception {
+        long targetPostId = 1;
+        long targetCommentId = 1;
+        Member writer = memberRepository.findByUsername("user2").get();
+
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/posts/%d/comments/%d".formatted(targetPostId, targetCommentId))
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey())) // 권한 검증을 위해 API 키를 헤더에 포함
+
+                )
+                .andDo(print());
+
+        // 필수 검증
+        resultActions
+                .andExpect(handler().handlerType(ApiV1CommentController.class))
+                .andExpect(handler().methodName("deleteItem"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403-2"))
+                .andExpect(jsonPath("$.msg").value("댓글 삭제 권한이 없습니다."));
+
+    }
+
 }

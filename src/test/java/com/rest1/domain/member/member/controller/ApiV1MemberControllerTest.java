@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -126,6 +127,38 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(username)))
                 .andExpect(jsonPath("$.data.apiKey").exists()) // 로그인 성공 시 API 키가 응답에 포함되어야 합니다.(필수)
+                .andExpect(jsonPath("$.data.memberDto.id").value(member.getId())) // 로그인한 회원의 정보 제공
+                //단, username과 password는 제공하면 안된다.
+                .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))
+                .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
+                .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
+
+    }
+
+    @Test
+    @DisplayName("내 정보")
+    void t4() throws Exception {
+        Member actor = memberRepository.findByUsername("user1").get();
+        String actorKey = actor.getApiKey();
+
+        //아이디랑 패스워드를 query string으로 받는 거 안좋고 body로 json으로 받는 게 좋음. 그래서 post로 보냄.
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/members/me")
+                                .header("Authorization", "Bearer " + actorKey) // API 키를 Authorization 헤더에 포함하여 요청
+
+                )
+                .andDo(print());
+
+        Member member = memberRepository.findByUsername("user1").get();
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("me"))
+                .andExpect(status().isOk()) // HTTP 201 Created
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("OK"))
+                .andExpect(jsonPath("$.data").exists()) // 로그인 성공 시 API 키가 응답에 포함되어야 합니다.(필수)
                 .andExpect(jsonPath("$.data.memberDto.id").value(member.getId())) // 로그인한 회원의 정보 제공
                 //단, username과 password는 제공하면 안된다.
                 .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))

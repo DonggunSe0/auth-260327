@@ -4,15 +4,13 @@ import com.rest1.domain.member.member.dto.MemberDto;
 import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.service.MemberService;
 import com.rest1.global.exception.ServiceException;
+import com.rest1.global.rq.Rq;
 import com.rest1.global.rsData.RsData;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +22,7 @@ public class ApiV1MemberController {
    // record는 클래스와 유사하지만,
    // 필드와 생성자, equals(), hashCode(), toString() 메서드를 자동으로 생성해줍니다.
    // 이를 통해 코드의 양을 줄이고 가독성을 높일 수 있습니다.
+    private final Rq rq;
     record  JoinReqBody(
             @NotBlank
             @Size(min=2, max=30)
@@ -92,6 +91,24 @@ public class ApiV1MemberController {
                 new LoginResBody(
                         new MemberDto(member),
                         member.getApiKey())
+        );
+    }
+
+    record  MeResBody(
+            MemberDto memberDto
+    ) {}
+
+    @GetMapping("/me")
+    public RsData<MemberDto> me() {
+
+        Member actor = rq.getActor();
+
+        return new RsData(
+                "200-1",
+                "OK",
+                new MeResBody(
+                        new MemberDto(actor)
+        )
         );
     }
 }
