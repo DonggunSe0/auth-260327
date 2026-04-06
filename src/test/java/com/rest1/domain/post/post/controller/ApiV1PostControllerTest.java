@@ -144,8 +144,37 @@ public class ApiV1PostControllerTest {
     }
 
     @Test
+    @DisplayName("글 작성, 인증 헤더가 없는 경우")
+    void t4() throws Exception {
+        String title = "제목입니다";
+        String content = "내용입니다";
+        Member writer = memberRepository.findByUsername("user1").get();
+
+
+        ResultActions resultActions = mvc
+                .perform( // 인증 헤더 없이 요청을 보냄
+                        post("/api/v1/posts")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "title": "%s",
+                                            "content": "%s"
+                                        }
+                                        """.formatted(title, content))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("createItem"))
+                .andExpect(status().isUnauthorized()) // HTTP 401 Unauthorized
+                .andExpect(jsonPath("$.resultCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("헤더에 인증 정보가 없습니다."));
+    }
+
+    @Test
     @DisplayName("글 작성, 제목이 입력되지 않은 경우")
-    void t7() throws Exception {
+    void t5() throws Exception {
         String title = "";
         String content = "내용입니다";
 
@@ -180,7 +209,7 @@ public class ApiV1PostControllerTest {
 
     @Test
     @DisplayName("글 작성, 내용이 입력되지 않은 경우")
-    void t8() throws Exception {
+    void t6() throws Exception {
         String title = "제목입니다.";
         String content = "";
 
@@ -213,7 +242,7 @@ public class ApiV1PostControllerTest {
 
     @Test
     @DisplayName("글 작성, JSON 양식이 잘못된 경우")
-    void t9() throws Exception {
+    void t7() throws Exception {
         String title = "제목입니다.";
         String content = "내용입니다";
 
@@ -244,7 +273,7 @@ public class ApiV1PostControllerTest {
 
     @Test
     @DisplayName("글 수정")
-    void t4() throws Exception {
+    void t8() throws Exception {
         long targetId = 1;
         String title = "제목 수정";
         String content = "내용 수정";
@@ -282,7 +311,7 @@ public class ApiV1PostControllerTest {
 
     @Test
     @DisplayName("글 삭제")
-    void t5() throws Exception {
+    void t9() throws Exception {
         long targetId = 1;
         Member writer = memberRepository.findByUsername("user1").get(); // 권한 검증을 위해 로그인한 회원이 존재해야 함.
 
@@ -309,7 +338,7 @@ public class ApiV1PostControllerTest {
 
     @Test
     @DisplayName("글 단건 조회, 존재하지 않는 글")
-    void t6() throws Exception {
+    void t10() throws Exception {
         long targetId = Integer.MAX_VALUE;
 
         ResultActions resultActions = mvc
@@ -323,6 +352,67 @@ public class ApiV1PostControllerTest {
                 .andExpect(handler().methodName("getItem"))
                 .andExpect(status().isNotFound());
 
+    }
+
+    @Test
+    @DisplayName("글 작성, 올바르지 않은 인증 헤더 형식")
+    void t11() throws Exception {
+        String title = "제목입니다";
+        String content = "내용입니다";
+        Member writer = memberRepository.findByUsername("user1").get();
+
+
+        ResultActions resultActions = mvc
+                .perform( // 인증 헤더 없이 요청을 보냄
+                        post("/api/v1/posts")
+                                .header("Authorization", "wrong %s".formatted(writer.getApiKey())) // 올바르지 않은 인증 헤더 형식
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "title": "%s",
+                                            "content": "%s"
+                                        }
+                                        """.formatted(title, content))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("createItem"))
+                .andExpect(status().isUnauthorized()) // HTTP 401 Unauthorized
+                .andExpect(jsonPath("$.resultCode").value("401-2"))
+                .andExpect(jsonPath("$.msg").value("헤더의 인증 정보 형식이 올바르지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("글 작성, 잘못된 API Key")
+    void t12() throws Exception {
+        String title = "제목입니다";
+        String content = "내용입니다";
+        Member writer = memberRepository.findByUsername("user1").get();
+
+
+        ResultActions resultActions = mvc
+                .perform( // 인증 헤더 없이 요청을 보냄
+
+                        post("/api/v1/posts")
+                                .header("Authorization", "Bearer %s".formatted(writer.getApiKey()+2)) // 올바르지 않은 인증 헤더 형식
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "title": "%s",
+                                            "content": "%s"
+                                        }
+                                        """.formatted(title, content))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("createItem"))
+                .andExpect(status().isUnauthorized()) // HTTP 401 Unauthorized
+                .andExpect(jsonPath("$.resultCode").value("401-3"))
+                .andExpect(jsonPath("$.msg").value("API키가 올바르지 않습니다."));
     }
 
 

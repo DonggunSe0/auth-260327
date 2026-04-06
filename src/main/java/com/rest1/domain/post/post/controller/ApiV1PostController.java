@@ -5,7 +5,6 @@ import com.rest1.domain.member.member.service.MemberService;
 import com.rest1.domain.post.post.dto.PostDto;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.domain.post.post.service.PostService;
-import com.rest1.global.exception.ServiceException;
 import com.rest1.global.rq.Rq;
 import com.rest1.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -63,9 +62,8 @@ public class ApiV1PostController {
     ) {
         Member actor = rq.getActor(); //한 줄로 현재 로그인한 회원을 가져옴. rq가 알아서 처리해줌.
         Post post = postService.findById(id).get();
-
         //게시물 수정 권한 체크
-        if(!actor.equals(post.getWriter())) throw new ServiceException("403-1", "삭제 권한이 없습니다.");
+        post.checkActorDelete(actor);
 
         postService.delete(post);
 
@@ -74,7 +72,6 @@ public class ApiV1PostController {
                 "%d번 게시물이 삭제되었습니다.".formatted(id)
         );
     }
-
 
     record PostWriteReqBody(
             @NotBlank
@@ -135,7 +132,8 @@ public class ApiV1PostController {
         Member actor = rq.getActor(); //한 줄로 현재 로그인한 회원을 가져옴. rq가 알아서 처리해줌.
         Post post = postService.findById(id).get();
         //게시물 수정 권한 체크
-        if(!actor.equals(post.getWriter())) throw new ServiceException("403-1", "수정 권한이 없습니다.");
+        post.checkActorModify(actor);
+
         //수정 로직
         postService.modify(post, reqBody.title, reqBody.content);
         return new RsData(

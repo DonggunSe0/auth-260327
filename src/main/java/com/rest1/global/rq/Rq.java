@@ -14,6 +14,7 @@ import org.springframework.web.context.annotation.RequestScope;
 public class Rq {
     private final MemberService memberService;
     private final HttpServletRequest request;
+    //프록시로 생성된다면 RequeestScope 생략 가능
     //그래서 controller에서 Rq를 주입받아 getActor() 메서드를 호출하면, 현재 요청의 Authorization 헤더에서 API 키를 추출하여
     // 해당 API 키에 해당하는 회원 정보를 반환하는 방식으로 인증을 처리할 수 있습니다.
     //새로운 요청을 처리할 때마다 Rq 객체가 새로 생성되고,
