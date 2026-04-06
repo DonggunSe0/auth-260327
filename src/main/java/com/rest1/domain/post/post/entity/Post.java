@@ -72,7 +72,7 @@ public class Post extends BaseEntity {
 
     public void checkActorDelete(Member actor) {
         if (!this.writer.getId().equals(actor.getId())) {
-            throw new ServiceException("403-1", "삭제 권한이 없습니다.");
+            throw new ServiceException("403-2", "삭제 권한이 없습니다.");
         }
     }
 }
